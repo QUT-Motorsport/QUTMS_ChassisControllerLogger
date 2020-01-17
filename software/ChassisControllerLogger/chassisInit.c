@@ -74,6 +74,7 @@ void io_init()
     PORTA = 0b00010000;
 
     DDRK  = 0b00100000;		//PK5 = debugging LED;
+    DDRK |= (1 << PK3); // enable SD_CS
     // PORTK = 0b00100000;
 
     // Enable external interrupts in order for the CAN bus to communicate with us

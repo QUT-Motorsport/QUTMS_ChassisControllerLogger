@@ -206,6 +206,30 @@
     <Compile Include="MCP2515.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="SDCard\diskio.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\diskio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\ff.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\ff.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\ffconf.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\ffsystem.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\SDInterface.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SDCard\SDInterface.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="SPI.c">
       <SubType>compile</SubType>
     </Compile>
@@ -229,6 +253,9 @@
     <None Include="chassisInit.lst">
       <SubType>compile</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="SDCard\" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
