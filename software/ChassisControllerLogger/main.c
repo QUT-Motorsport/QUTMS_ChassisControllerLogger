@@ -115,6 +115,7 @@ int main(void) {
     uint32_t tractiveCAN_ID;
     uint8_t tractiveCAN_numBytes;
 
+    uint8_t numLogs = 0;
 
 
     while(1) {
@@ -138,7 +139,7 @@ int main(void) {
 
             // Get the data from the CAN bus and process it
             CAN_pull_packet(POWER_CAN, &powerCAN_numBytes, powerCAN_data, &powerCAN_ID);
-            uart_puts("pc");
+            uart_puts("pc\n");
         }
 
         if (dataCANReady) {
@@ -146,7 +147,7 @@ int main(void) {
 
             // Get the data from the CAN bus and process it
             CAN_pull_packet(DATA_CAN, &dataCAN_numBytes, dataCAN_data, &dataCAN_ID);
-            uart_puts("dc");
+            uart_puts("dc\n");
         }
 
         if (tractiveCANReady) {
@@ -154,60 +155,76 @@ int main(void) {
 
             // Get the data from the CAN bus and process it
             CAN_pull_packet(TRACTIVE_CAN, &tractiveCAN_numBytes, tractiveCAN_data, &tractiveCAN_ID);
-            uart_puts("tc");
+            uart_puts("tc\n");
         }
 
-        uart_puts("\r\n");
+        if (tractiveCAN_numBytes > 0 || dataCAN_numBytes > 0 || powerCAN_numBytes > 0) {
 
-        res = f_open(&logFile, "TEST.TXT", FA_READ | FA_WRITE | FA_OPEN_APPEND);
+            if (numLogs < 20) {
+                numLogs++;
+                res = f_open(&logFile, "TEST.TXT", FA_READ | FA_WRITE | FA_OPEN_APPEND);
 
-        if (res == FR_OK) {
-            UINT totalLength = 0;
-            UINT length;
-            if (powerCAN_numBytes > 0) {
-                uart_puts("log\r\n");
-
-                //if (tractiveCAN_numBytes > 0 || dataCAN_numBytes > 0 || powerCAN_numBytes > 0) {
-                //double current_time = numMS / 1000.0;
-                uart_putformatted("t:%d", numMS);
-                f_printf(&logFile, "PC");
-                res = f_write(&logFile, (void*)&numMS, sizeof(numMS), &length );
-                totalLength += length;
-
-                res = f_write(&logFile, (void*)&powerCAN_numBytes, sizeof(powerCAN_numBytes), &length );
-                uart_putformatted("s:%d", powerCAN_numBytes);
-                totalLength += length;
-                if (powerCAN_numBytes > 0) {
-                    res = f_write(&logFile, (void*)&powerCAN_ID, sizeof(powerCAN_ID), &length );
-                    uart_putformatted("id:%d", powerCAN_ID);
+                if (res == FR_OK) {
+                    UINT totalLength = 0;
+                    UINT length;
+                    // time - uint32
+                    uart_putformatted("t:%lu", numMS);
+                    res = f_write(&logFile, (void*)&numMS, sizeof(numMS), &length );
                     totalLength += length;
-                    res = f_write(&logFile, (void*)powerCAN_data, powerCAN_numBytes, &length );
+
+                    // size of message - uint8
+                    res = f_write(&logFile, (void*)&powerCAN_numBytes, sizeof(powerCAN_numBytes), &length );
+                    uart_putformatted("Ps:%u", powerCAN_numBytes);
                     totalLength += length;
+                    if (powerCAN_numBytes > 0) {
+                        // id - uint32
+                        res = f_write(&logFile, (void*)&powerCAN_ID, sizeof(powerCAN_ID), &length );
+                        uart_putformatted("id:%lu", powerCAN_ID);
+                        totalLength += length;
+                        // data - uint8 * size
+                        res = f_write(&logFile, (void*)powerCAN_data, powerCAN_numBytes, &length );
+                        totalLength += length;
+                    }
+
+                    // size of message - uint8
+                    res = f_write(&logFile, (void*)&dataCAN_numBytes, sizeof(dataCAN_numBytes), &length );
+                    uart_putformatted("Ds:%u", dataCAN_numBytes);
+                    totalLength += length;
+                    if (dataCAN_numBytes > 0) {
+                        // id - uint32
+                        res = f_write(&logFile, (void*)&dataCAN_ID, sizeof(dataCAN_ID), &length );
+                        uart_putformatted("id:%lu", dataCAN_ID);
+
+                        totalLength += length;
+                        // data - uint8 * size
+                        res = f_write(&logFile, (void*)dataCAN_data, dataCAN_numBytes, &length );
+                        totalLength += length;
+                    }
+
+                    // size of message - uint8
+                    res = f_write(&logFile, (void*)&tractiveCAN_numBytes, sizeof(tractiveCAN_numBytes), &length );
+                    uart_putformatted("Ts:%u", tractiveCAN_numBytes);
+
+                    totalLength += length;
+                    if (tractiveCAN_numBytes > 0) {
+                        // id - uint32
+                        res = f_write(&logFile, (void*)&tractiveCAN_ID, sizeof(tractiveCAN_ID), &length );
+                        uart_putformatted("id:%lu", tractiveCAN_ID);
+
+                        totalLength += length;
+                        // data - uint8 * size
+                        res = f_write(&logFile, (void*)tractiveCAN_data, tractiveCAN_numBytes, &length );
+                        totalLength += length;
+                    }
+
+                    uart_putformatted("can len: %d\r\n", totalLength);
+                    f_close(&logFile);
+
                 }
 
-                /*      res = f_write(&logFile, (void*)&dataCAN_numBytes, sizeof(dataCAN_numBytes), &length );
-                      totalLength += length;
-                      if (dataCAN_numBytes > 0) {
-                          res = f_write(&logFile, (void*)&dataCAN_ID, sizeof(dataCAN_ID), &length );
-                          totalLength += length;
-                          res = f_write(&logFile, (void*)dataCAN_data, dataCAN_numBytes, &length );
-                          totalLength += length;
-                      }
 
-                      res = f_write(&logFile, (void*)&tractiveCAN_numBytes, sizeof(tractiveCAN_numBytes), &length );
-                      totalLength += length;
-                      if (tractiveCAN_numBytes > 0) {
-                          res = f_write(&logFile, (void*)&tractiveCAN_ID, sizeof(tractiveCAN_ID), &length );
-                          totalLength += length;
-                          res = f_write(&logFile, (void*)tractiveCAN_data, tractiveCAN_numBytes, &length );
-                          totalLength += length;
-                      }
-                	  */
+
             }
-
-
-            uart_putformatted("can len: %d\r\n", totalLength);
-            f_close(&logFile);
         }
 
 //if(isCharAvailable() == 1)uart_process_byte(receiveChar());
