@@ -9,6 +9,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
 public class MainWindow extends JFrame {
@@ -35,12 +37,22 @@ public class MainWindow extends JFrame {
 
     JSpinner spinnerMsgExtra;
 
+    JTextArea consoleLog;
+
+    CANMessageTableModel CANTableModel;
+
+
+
 
 
     public MainWindow() {
         setupGUI();
     }
 
+    /**
+     * Initializes and creates the GUI
+     *
+     */
     private void setupGUI() {
         this.setTitle(windowTitle);
 
@@ -191,14 +203,34 @@ public class MainWindow extends JFrame {
 
         // recieved message panel
         JPanel messageTablePanel = new JPanel();
-        JPanel messageInfoPanel = new JPanel();
+        JPanel consolePanel = new JPanel();
+
+        // message table
+        CANTableModel = new CANMessageTableModel();
+        CANTableModel.AddMessage(new CANMessage(LocalDateTime.now(), "Test", "source", "auto", "type", 2, 5, new int[]{1, 2, 3, 4, 5, 6, 7, 8}));
+
+        JTable messageTable = new JTable(CANTableModel);
+        messageTable.getTableHeader().setReorderingAllowed(false);
+        messageTable.setRowSelectionAllowed(true);
+        messageTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+
+        JScrollPane tableScrollPane = new JScrollPane(messageTable);
+
+        messageTablePanel.setLayout(new BorderLayout());
+        messageTablePanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        consoleLog = new JTextArea();
+
+        consolePanel.setLayout(new BorderLayout());
+        consolePanel.add(consoleLog, BorderLayout.CENTER);
 
         messageTablePanel.setBackground(Color.red);
-        messageInfoPanel.setBackground(Color.green);
+        consolePanel.setBackground(Color.green);
 
-        recievedMessagePanel.setLayout(new GridLayout(1,2));
+        recievedMessagePanel.setLayout(new GridLayout(2,1));
         recievedMessagePanel.add(messageTablePanel);
-        recievedMessagePanel.add(messageInfoPanel);
+        recievedMessagePanel.add(consolePanel);
 
         // add panels to GUI and pack
         this.add(sendMessagePanel);
@@ -206,11 +238,21 @@ public class MainWindow extends JFrame {
         this.pack();
     }
 
+    /**
+     * Called when a CAN message is received over serial
+     * @param message
+     */
     public void RecieveMessage(CANMessage message) {
-
+        CANTableModel.AddMessage(message);
+        AddToLog("Received Message");
     }
 
+    /**
+     * Called Send button is clicked
+     * Creates a CAN message out of the current fields
+     */
     public void SendMessage() {
+        // grab data length and packets
         int dataLength = (int)spinnerDataLength.getValue();
         int[] dataPackets = new int[dataLength];
         for (int i = 0; i < dataLength; i++) {
@@ -218,5 +260,23 @@ public class MainWindow extends JFrame {
         }
 
         System.out.println(Arrays.toString(dataPackets));
+
+        String priority = (String)comboMsgPriority.getSelectedItem();
+        String sourceID = (String)comboMsgSourceID.getSelectedItem();
+        String autonomous = (String)comboMsgAutonomous.getSelectedItem();
+        String messageType = (String)comboMsgType.getSelectedItem();
+        int extraID = (int)spinnerMsgExtra.getValue();
+
+        CANMessage message = new CANMessage(LocalDateTime.now(), priority, sourceID, autonomous, messageType, extraID, dataLength, dataPackets);
+        AddToLog("Send Message");
+
+        // TODO: replace this with serial sending code
+        RecieveMessage(message);
+    }
+
+    public void AddToLog(String message) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String formatDateTime = LocalDateTime.now().format(formatter);
+        consoleLog.append(formatDateTime + "\t" + message + "\n");
     }
 }
