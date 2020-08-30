@@ -1,3 +1,9 @@
+# IntelliJ
+software/CAN_GUI/out/
+software/CAN_GUI/out/*
+
+
+
 # Various Altium files
 *.PrjPCBStructure
 *.SchDocPreview
