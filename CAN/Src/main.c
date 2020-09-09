@@ -71,7 +71,7 @@ uint8_t dataLength[1];
 uint8_t data[2];
 uint8_t TxData[8];
 
-const bool sender = true;
+const bool sender = false;
 
 // UART char buffer
 char msg[140];
@@ -311,31 +311,89 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		// message read successfully
 
 		// Print ID and first data byte to serial
-			snprintf(msg, sizeof(msg) - 1,"%c\r\n",RxData[0]);
-		}
+		snprintf(msg, sizeof(msg) - 1,
+				"Extended ID: 0x%lX  Data[0]: 0x%X  Data[1]: 0x%X Data[2]: 0x%X Data[3]: 0x%X Data[4]: 0x%X Data[5]: 0x%X Data[6]: 0x%X Data[7]: 0x%X\r\n",
+				 RxHeader.ExtId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
+
+
 		if (HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
 		HAL_MAX_DELAY) != HAL_OK) {
 
 			Error_Handler();
 		}
-}
-
-
-//Handle Huart Pending Callback
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
+	}
 }
 
 // Handle CAN Rx fifo callback (cannot test in loopback mode)
 // Overrides stm32l4xx_hal_can.c
-//void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
-//	char msg[80];
-//
-//	snprintf(msg, sizeof(msg) - 1, "RX FIFO0 Full callback\r\n");
-//	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-//}
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
+	char msg[80];
 
+	snprintf(msg, sizeof(msg) - 1, "RX FIFO0 Full callback\r\n");
+	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+}
 
+const char* getSourceID()
+{
+	int value = (RxHeader.ExtId << 3) >> (3 + 19);
+	if (0 <= value && value <= 3)
+	{
+		return "External Master";
+	}
+	if (4 <= value && value <= 5)
+	{
+		return "Chassis Controller";
+	}
+	if (6 <= value && value <= 7)
+	{
+		return "AMS";
+	}
+	if (8 <= value && value <= 11)
+	{
+		return "Shutdown";
+	}
+	if (12 <= value && value <= 13)
+	{
+		return "Shutdown - BPSD";
+	}
+	if (14 <= value && value <= 15)
+	{
+		return "Shutdown - Current";
+	}
+	if (16 <= value && value <= 17)
+	{
+		return "PDM";
+	}
+	if (18 <= value && value <= 19)
+	{
+		return "Steering Wheel";
+	}
+	if (20 <= value && value <= 21)
+	{
+		return "Dashboard";
+	}
+	if (22 <= value && value <= 23)
+	{
+		return "BMS";
+	}
+	if (24 <= value && value <= 25)
+	{
+		return "IMD";
+	}
+	if (26 <= value && value <= 27)
+	{
+		return "Sensors";
+	}
+	if (32 <= value && value <= 28)
+	{
+		return "Sensors";
+	}
+	else
+	{
+		return "Reserved";
+	}
+	return "0";
+}
 
 /* USER CODE END 4 */
 
