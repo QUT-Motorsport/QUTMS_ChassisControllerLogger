@@ -63,12 +63,12 @@ uint32_t TxMailbox;
 uint8_t result;
 
 uint8_t heartbeat[1];
-uint8_t sourceID[3];
+uint8_t sourceID[2];
 uint8_t autonomous[1];
 uint8_t messageType[1];
-uint8_t extraID[4];
+uint8_t extraID[2];
 uint8_t dataLength[1];
-uint8_t data[2];
+uint8_t data[1];
 uint8_t TxData[8];
 
 const bool sender = false;
@@ -150,18 +150,18 @@ int main(void) {
 		snprintf(msg, sizeof(msg) - 1, "Heart is turned on? (0/1):");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 		HAL_UART_Receive(&huart2, (uint8_t*)heartbeat, 1, HAL_MAX_DELAY);
-		heartbeat[0] = To_Decimal(heartbeat[0]);
+//		heartbeat[0] = To_Decimal(heartbeat[0]);
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
 		//input source ID
 		snprintf(msg, sizeof(msg) - 1, "Source ID (in hexadecimal): 0x");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 3, HAL_MAX_DELAY);
+		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 2, HAL_MAX_DELAY);
 		long int hexSourceID;
 		hexSourceID = 0;
-		for (int i = 0; i < 3; i++){
-			sourceID[i] = To_Decimal(sourceID[i]);
+		for (int i = 0; i < 2; i++){
+			//sourceID[i] = To_Decimal(sourceID[i]);
 			hexSourceID = hexSourceID + sourceID[i] * pow(16,(2 - i));
 		}
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
@@ -171,7 +171,7 @@ int main(void) {
 		snprintf(msg, sizeof(msg) - 1, "Autonomous is turned on? (0/1): ");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 		HAL_UART_Receive(&huart2, (uint8_t*)autonomous, 1, HAL_MAX_DELAY);
-		autonomous[0] = To_Decimal(autonomous[0]);
+//		autonomous[0] = To_Decimal(autonomous[0]);
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
@@ -179,18 +179,18 @@ int main(void) {
 		snprintf(msg, sizeof(msg) - 1, "Message Type (in hexadecimal): 0x");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 		HAL_UART_Receive(&huart2, (uint8_t*)messageType, 1, HAL_MAX_DELAY);
-		messageType[0] = To_Decimal(messageType[0]);
+//		messageType[0] = To_Decimal(messageType[0]);
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
 		//input extra ID
 		snprintf(msg, sizeof(msg) - 1, "Extra ID (in hexadecimal): 0x");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 4, HAL_MAX_DELAY);
+		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 2, HAL_MAX_DELAY);
 		long int hexExtraID;
 		hexExtraID = 0;
-		for (int i = 0; i < 4; i++){
-			extraID[i] = To_Decimal(extraID[i]);
+		for (int i = 0; i < 2; i++){
+//			extraID[i] = To_Decimal(extraID[i]);
 			hexExtraID = hexExtraID + extraID[i] * pow(16,(3 - i));
 		}
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
@@ -200,7 +200,7 @@ int main(void) {
 		snprintf(msg, sizeof(msg) - 1, "Input the data length: ");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 		HAL_UART_Receive(&huart2, (uint8_t*)dataLength, 1, HAL_MAX_DELAY);
-		dataLength[0] = To_Decimal(dataLength[0]);
+//		dataLength[0] = To_Decimal(dataLength[0]);
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
@@ -210,12 +210,12 @@ int main(void) {
 		for (int i = 0; i < dataLength[0]; i++){
 			snprintf(msg, sizeof(msg) - 1, "Data[%d]: ",i);
 			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-			HAL_UART_Receive(&huart2, (uint8_t*)data, 2, HAL_MAX_DELAY);
-			TxData[i] = 0;
-			for (int j = 0; j < 2; j++){
-				data[j] = To_Decimal(data[j]);
-				TxData[i] = TxData[i] + data[j] * pow(16,(1-j));
-			}
+			HAL_UART_Receive(&huart2, (uint8_t*)data, 1, HAL_MAX_DELAY);
+			TxData[i] = data[i];
+//			for (int j = 0; j < 2; j++){
+//				data[j] = To_Decimal(data[j]);
+//				TxData[i] = TxData[i] + data[j] * pow(16,(1-j));
+//			}
 		snprintf(msg, sizeof(msg) - 1, "\r\n ");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 		}
