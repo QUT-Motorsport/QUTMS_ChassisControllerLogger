@@ -1,4 +1,4 @@
-import gnu.io.SerialPort;
+import gnu.io.SerialPort; // rxtx library. Need to add library manually. The library is in RxTx Library folder
 
 import javax.swing.*;
 import java.io.OutputStream;

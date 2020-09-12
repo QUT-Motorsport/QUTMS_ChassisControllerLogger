@@ -1,4 +1,4 @@
-import gnu.io.*;
+import gnu.io.*; // rxtx library. Need to add library manually. The library is in RxTx Library folder
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,21 +37,37 @@ public class CANDataTransmission {
         }
     }
 
-//    public class SerialWriter implements Runnable{
-//        OutputStream out;
-//
-//        public SerialWriter(OutputStream out){
-//            this.out = out;
-//        }
-//
-//        public void run(){
-//
-//        }
-//    }
 
-    public SerialPort openPort(String portName) throws UnsupportedCommOperationException, PortInUseException, NoSuchPortException {
-        SerialPort serialPort = null;
+    private CommPortIdentifier portIdentifier;
+    private Integer BAUDSpeed;
+    private String portName;
+
+    /**
+     * Indentify the port
+     * @param portName the port name
+     * @param BAUDSpeed the baud speed
+     * @throws UnsupportedCommOperationException
+     * @throws PortInUseException
+     * @throws NoSuchPortException
+     * @throws IOException
+     */
+    public void identifyPort(String portName, Integer BAUDSpeed) throws UnsupportedCommOperationException, PortInUseException, NoSuchPortException, IOException {
+        this.portName = portName;
+        this.BAUDSpeed = BAUDSpeed;
         CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
+        this.portIdentifier = portIdentifier;
+
+    }
+
+
+    /**
+     * send data as string. Every time it sends data via port, open the port again.
+     * @param asciiData
+     * @throws IOException
+     * @throws UnsupportedCommOperationException
+     * @throws PortInUseException
+     */
+    public void sendData(String asciiData) throws IOException, UnsupportedCommOperationException, PortInUseException {
 
         if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
             System.out.println("Error: Port is currently in use!");
@@ -60,35 +76,39 @@ public class CANDataTransmission {
 
             if (commPort instanceof SerialPort) {
                 serialPort = (SerialPort) commPort;
-                serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+                serialPort.setSerialPortParams(BAUDSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+
+                OutputStream os = commPort.getOutputStream();
+                os.write(asciiData.getBytes());
+
             }
         }
-        return serialPort;
     }
 
-    public OutputStream openOutputStream(SerialPort serialPort){
-        OutputStream os = null;
-        try{
-            os = serialPort.getOutputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    /**
+     * private method for future use
+     * @throws PortInUseException
+     * @throws UnsupportedCommOperationException
+     */
+    private void operPort() throws PortInUseException, UnsupportedCommOperationException {
+        if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
+            System.out.println("Error: Port is currently in use!");
+        } else {
+            CommPort commPort = portIdentifier.open(portName, 2000);
 
-        return os;
-    }
-    public void sendData(OutputStream os, byte[] asciiData) {
-        try {
-            os.write(asciiData);
-
-        } catch (IOException e){
-            System.out.println(e);
+            if (commPort instanceof SerialPort) {
+                serialPort = (SerialPort) commPort;
+                serialPort.setSerialPortParams(BAUDSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+            }
         }
     }
 
-    public void disconnect(SerialPort serialPort, OutputStream os) throws IOException {
-
-        os.close();
-        serialPort.close();
+    /**
+     * close the port.
+     * @throws IOException
+     */
+    public void disconnect() throws IOException {
+        cp.close();
     }
 }
 
