@@ -9,38 +9,40 @@ public class CANDataTransmission {
         super();
     }
 
-    private OutputStream os;
-    private CommPort cp;
-
-    public void Connect(String portName, String asciiData) throws Exception {
-        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
-
-        if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
-            System.out.println("Error: Port is currently in use!");
-        } else {
-            CommPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
-
-            cp = commPort;
-            if (commPort instanceof SerialPort) {
-                SerialPort serialPort = (SerialPort) commPort;
-                serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-
-                OutputStream out = serialPort.getOutputStream();
-                os = out;
-                out.write(asciiData.getBytes());
-
-                cp.close();
-
-            } else {
-                System.out.println("Error: Only Serial ports are handled by this example!!");
-            }
-        }
-    }
+//    private OutputStream os;
+//    private CommPort cp;
+//
+//    public void Connect(String portName, String asciiData) throws Exception {
+//        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
+//
+//        if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
+//            System.out.println("Error: Port is currently in use!");
+//        } else {
+//            CommPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
+//
+//            cp = commPort;
+//            if (commPort instanceof SerialPort) {
+//                SerialPort serialPort = (SerialPort) commPort;
+//                serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+//
+//                OutputStream out = serialPort.getOutputStream();
+//                os = out;
+//                out.write(asciiData.getBytes());
+//
+//                cp.close();
+//
+//            } else {
+//                System.out.println("Error: Only Serial ports are handled by this example!!");
+//            }
+//        }
+//    }
 
 
     private CommPortIdentifier portIdentifier;
     private Integer BAUDSpeed;
     private String portName;
+    private SerialPort serialPort;
+    private CommPort commPort;
 
     /**
      * Indentify the port
@@ -54,47 +56,36 @@ public class CANDataTransmission {
     public void identifyPort(String portName, Integer BAUDSpeed) throws UnsupportedCommOperationException, PortInUseException, NoSuchPortException, IOException {
         this.portName = portName;
         this.BAUDSpeed = BAUDSpeed;
-        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
-        this.portIdentifier = portIdentifier;
+        this.portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
 
     }
-
 
     /**
      * send data as string. Every time it sends data via port, open the port again.
      * @param asciiData
-     * @throws IOException
-     * @throws UnsupportedCommOperationException
-     * @throws PortInUseException
+     * @throws Exception
      */
-    public void sendData(String asciiData) throws IOException, UnsupportedCommOperationException, PortInUseException {
+    public void sendData(String asciiData) throws Exception {
 
-        if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
-            System.out.println("Error: Port is currently in use!");
-        } else {
-            CommPort commPort = portIdentifier.open(portName, 2000);
+        operPort();
 
-            if (commPort instanceof SerialPort) {
-                serialPort = (SerialPort) commPort;
-                serialPort.setSerialPortParams(BAUDSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+        OutputStream os = commPort.getOutputStream();
+        os.write(asciiData.getBytes());
 
-                OutputStream os = commPort.getOutputStream();
-                os.write(asciiData.getBytes());
-
-            }
-        }
+        disconnect();
     }
 
+
     /**
-     * private method for future use
-     * @throws PortInUseException
-     * @throws UnsupportedCommOperationException
+     * open the port
+     * @throws Exception
      */
-    private void operPort() throws PortInUseException, UnsupportedCommOperationException {
+    private void operPort() throws Exception {
+
         if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
             System.out.println("Error: Port is currently in use!");
         } else {
-            CommPort commPort = portIdentifier.open(portName, 2000);
+            this.commPort = portIdentifier.open(portName, 2000);
 
             if (commPort instanceof SerialPort) {
                 serialPort = (SerialPort) commPort;
@@ -108,7 +99,7 @@ public class CANDataTransmission {
      * @throws IOException
      */
     public void disconnect() throws IOException {
-        cp.close();
+        commPort.close();
     }
 }
 
