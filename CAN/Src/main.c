@@ -300,11 +300,7 @@ double To_Decimal(uint8_t input){
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	// called when there's a message waiting in the FIFO RX buffer
 
-	snprintf(msg, sizeof(msg) - 1, "CALLBACK \r\n");
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
-			HAL_MAX_DELAY);
-
-	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
+		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
 		/* Reception Error */
 		Error_Handler();
 	} else {
@@ -314,9 +310,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		snprintf(msg, sizeof(msg) - 1,
 				"Extended ID: 0x%lX  Data[0]: 0x%X  Data[1]: 0x%X Data[2]: 0x%X Data[3]: 0x%X Data[4]: 0x%X Data[5]: 0x%X Data[6]: 0x%X Data[7]: 0x%X\r\n",
 				 RxHeader.ExtId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
+		uint8_t datamsg[13];
+		datamsg[0] = RxHeader.ExtId; // bits[7:0]
+		datamsg[1] = RxHeader.ExtId >> 8; // bits[15:8]
+		datamsg[2] = RxHeader.ExtId >> 16; // bits[23:16]
+		datamsg[3] = RxHeader.ExtId >> 24; // bits[31:24]
+		datamsg[4] = RxHeader.DLC;
+		for (int i =0; i < RxHeader.DLC; i++) {
+			datamsg[5+i] = RxData[i];
+		}
 
-
-		if (HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
+		if (HAL_UART_Transmit(&huart2, datamsg, 5 + RxHeader.DLC,
 		HAL_MAX_DELAY) != HAL_OK) {
 
 			Error_Handler();

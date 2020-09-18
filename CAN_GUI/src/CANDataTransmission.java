@@ -110,5 +110,54 @@ public class CANDataTransmission {
     private void disconnect() throws IOException {
         commPort.close();
     }
+
+    /**
+     * read the input data via the serial port
+     * @throws Exception
+     */
+    public void readData() throws Exception {
+
+        com.fazecast.jSerialComm.SerialPort sp = com.fazecast.jSerialComm.SerialPort.getCommPort("COM3");
+        sp.openPort();
+        sp.setComPortParameters(115200, 8,1,0);
+//        sp.setComPortTimeouts(com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_BLOCKING, 1000, 0);
+        InputStream in = sp.getInputStream();
+        System.out.println(sp.getBaudRate());
+        try {
+            while (true)
+            {
+                while(sp.bytesAvailable() == 0)
+                    Thread.sleep(20);
+                byte[] readBuffer = new byte[20];
+                int numRead = sp.readBytes(readBuffer, readBuffer.length);
+                System.out.println("numRead: " + numRead);
+                if (numRead < 5) {
+                    System.out.println("invalid message, bad header");
+                    continue;
+                }
+                long t_extID = readBuffer[0] | (readBuffer[1] << 8) | (readBuffer[2] << 16) | (readBuffer[3] << 24);
+                int extID = (int)(t_extID & 0x1FFFFFFF);
+                int dlc = readBuffer[4];
+                if (numRead < 5 + dlc) {
+                    System.out.println("invalid message, bad data");
+                    System.out.println("dlc: " + dlc);
+                    continue;
+                }
+
+                int[] data = new int[dlc];
+                for (int i = 0; i < dlc; i++) {
+                    data[i] = (int)readBuffer[5+i] & 0xFF;
+                }
+                System.out.println("<------------------------------------------------>");
+                System.out.println("ExtId: " + String.format("0x%08X", extID));
+                System.out.println("dlc: " + dlc);
+                for (int i = 0; i < dlc; i++) {
+                    System.out.print("data["+i+"]: " + data[i] + " ");
+                }
+                System.out.print("\n");
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        sp.closePort();
+    }
 }
 
