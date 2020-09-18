@@ -1,5 +1,6 @@
 import gnu.io.*; // rxtx library. Need to add library manually. The library is in RxTx Library folder
 
+//import com.fazecast.jSerialComm.*;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -41,7 +42,7 @@ public class CANDataTransmission {
     private CommPortIdentifier portIdentifier;
     private Integer BAUDSpeed;
     private String portName;
-    private SerialPort serialPort;
+    private gnu.io.SerialPort serialPort;
     private CommPort commPort;
 
     /**
@@ -73,6 +74,14 @@ public class CANDataTransmission {
         os.write(asciiData);
 
         disconnect();
+
+//        com.fazecast.jSerialComm.SerialPort sp = com.fazecast.jSerialComm.SerialPort.getCommPort("COM4");
+//        sp.openPort();
+//        sp.setComPortParameters(115200,8,1,0);
+//        OutputStream o = sp.getOutputStream();
+//        o.write(asciiData);
+//
+//        sp.closePort();
     }
 
 

@@ -282,6 +282,7 @@ public class MainWindow extends JFrame {
 
         // TODO: replaced with sending code
         CANDataTransmission COM = new CANDataTransmission();
+        // Here you have to manually change the values for the ports
         COM.identifyPort("COM4", 115200);
 
         // heartbeat (0-2)
