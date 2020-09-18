@@ -1,4 +1,8 @@
 
+import gnu.io.NoSuchPortException;
+import gnu.io.PortInUseException;
+import gnu.io.UnsupportedCommOperationException;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -9,6 +13,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -189,7 +194,11 @@ public class MainWindow extends JFrame {
         btnSendMessage.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SendMessage();
+                try {
+                    SendMessage();
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
             }
         });
         messageContentsPanel.add(btnSendMessage);
@@ -252,26 +261,53 @@ public class MainWindow extends JFrame {
      * Called Send button is clicked
      * Creates a CAN message out of the current fields
      */
-    public void SendMessage() {
+    public void SendMessage() throws Exception {
         // grab data length and packets
-        int dataLength = (int)spinnerDataLength.getValue();
+        int dataLength = (int) spinnerDataLength.getValue();
         int[] dataPackets = new int[dataLength];
         for (int i = 0; i < dataLength; i++) {
-            dataPackets[i] = (int)spinnerDataBytes[i].getValue();
+            dataPackets[i] = (int) spinnerDataBytes[i].getValue();
         }
 
         System.out.println(Arrays.toString(dataPackets));
 
-        String priority = (String)comboMsgPriority.getSelectedItem();
-        String sourceID = (String)comboMsgSourceID.getSelectedItem();
-        String autonomous = (String)comboMsgAutonomous.getSelectedItem();
-        String messageType = (String)comboMsgType.getSelectedItem();
-        int extraID = (int)spinnerMsgExtra.getValue();
+        String priority = (String) comboMsgPriority.getSelectedItem();
+        String sourceID = (String) comboMsgSourceID.getSelectedItem();
+        String autonomous = (String) comboMsgAutonomous.getSelectedItem();
+        String messageType = (String) comboMsgType.getSelectedItem();
+        int extraID = (int) spinnerMsgExtra.getValue();
 
         CANMessage message = new CANMessage(LocalDateTime.now(), priority, sourceID, autonomous, messageType, extraID, dataLength, dataPackets);
         AddToLog("Send Message");
 
-        // TODO: replace this with serial sending code
+        // TODO: replaced with sending code
+        CANDataTransmission COM = new CANDataTransmission();
+        COM.identifyPort("COM4", 115200);
+
+        // heartbeat (0-2)
+        COM.sendData(message.priority);
+
+        //sourceID (max: "Sensors" - 32)
+        COM.sendData(message.sourceID);
+
+        //autonomous (0/1)
+        COM.sendData(message.autonomous);
+
+        //message type (max: "Data transmit" - 3)
+        COM.sendData(message.messageType);
+
+        //extraID (max: 32767 or 15 bits)
+        COM.sendData(message.extraID);
+
+        //data length (max: 8)
+        COM.sendData(message.dataLength);
+
+        //Data (max: 255)
+        for (int i = 0; i < message.dataLength; ++i)
+        {
+            COM.sendData(dataPackets[i]); // each of the data packets
+        }
+
         RecieveMessage(message);
     }
 

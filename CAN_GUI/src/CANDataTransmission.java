@@ -65,12 +65,12 @@ public class CANDataTransmission {
      * @param asciiData
      * @throws Exception
      */
-    public void sendData(String asciiData) throws Exception {
+    public void sendData(int asciiData) throws Exception {
 
-        operPort();
+        openPort();
 
         OutputStream os = commPort.getOutputStream();
-        os.write(asciiData.getBytes());
+        os.write(asciiData);
 
         disconnect();
     }
@@ -80,7 +80,7 @@ public class CANDataTransmission {
      * open the port
      * @throws Exception
      */
-    private void operPort() throws Exception {
+    private void openPort() throws Exception {
 
         if (portIdentifier.isCurrentlyOwned()) { //the port is currently in use
             System.out.println("Error: Port is currently in use!");
@@ -98,7 +98,7 @@ public class CANDataTransmission {
      * close the port.
      * @throws IOException
      */
-    public void disconnect() throws IOException {
+    private void disconnect() throws IOException {
         commPort.close();
     }
 }

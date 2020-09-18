@@ -63,15 +63,15 @@ uint32_t TxMailbox;
 uint8_t result;
 
 uint8_t heartbeat[1];
-uint8_t sourceID[2];
+uint8_t sourceID[1];
 uint8_t autonomous[1];
 uint8_t messageType[1];
-uint8_t extraID[2];
-uint8_t dataLength[1];
+uint8_t extraID[1];
+uint8_t dataLength;
 uint8_t data[1];
 uint8_t TxData[8];
 
-const bool sender = false;
+const bool sender = true;
 
 // UART char buffer
 char msg[140];
@@ -157,13 +157,13 @@ int main(void) {
 		//input source ID
 		snprintf(msg, sizeof(msg) - 1, "Source ID (in hexadecimal): 0x");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 2, HAL_MAX_DELAY);
-		long int hexSourceID;
-		hexSourceID = 0;
-		for (int i = 0; i < 2; i++){
-			//sourceID[i] = To_Decimal(sourceID[i]);
-			hexSourceID = hexSourceID + sourceID[i] * pow(16,(2 - i));
-		}
+		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 1, HAL_MAX_DELAY);
+//		long int hexSourceID;
+//		hexSourceID = 0;
+//		for (int i = 0; i < 2; i++){
+//			//sourceID[i] = To_Decimal(sourceID[i]);
+//			hexSourceID = hexSourceID + sourceID[i] * pow(16,(2 - i));
+//		}
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
@@ -186,20 +186,20 @@ int main(void) {
 		//input extra ID
 		snprintf(msg, sizeof(msg) - 1, "Extra ID (in hexadecimal): 0x");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 2, HAL_MAX_DELAY);
-		long int hexExtraID;
-		hexExtraID = 0;
-		for (int i = 0; i < 2; i++){
-//			extraID[i] = To_Decimal(extraID[i]);
-			hexExtraID = hexExtraID + extraID[i] * pow(16,(3 - i));
-		}
+		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 1, HAL_MAX_DELAY);
+//		long int hexExtraID;
+//		hexExtraID = 0;
+//		for (int i = 0; i < 2; i++){
+////			extraID[i] = To_Decimal(extraID[i]);
+//			hexExtraID = hexExtraID + extraID[i] * pow(16,(3 - i));
+//		}
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
 		//input the data length
 		snprintf(msg, sizeof(msg) - 1, "Input the data length: ");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)dataLength, 1, HAL_MAX_DELAY);
+		HAL_UART_Receive(&huart2, &dataLength, 1, HAL_MAX_DELAY);
 //		dataLength[0] = To_Decimal(dataLength[0]);
 		snprintf(msg, sizeof(msg) - 1, "\r\n");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
@@ -207,11 +207,11 @@ int main(void) {
 		//input data
 		snprintf(msg, sizeof(msg) - 1, "Input the data! \r\n ");
 		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		for (int i = 0; i < dataLength[0]; i++){
+		for (int i = 0; i < dataLength; i++){
 			snprintf(msg, sizeof(msg) - 1, "Data[%d]: ",i);
 			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 			HAL_UART_Receive(&huart2, (uint8_t*)data, 1, HAL_MAX_DELAY);
-			TxData[i] = data[i];
+			TxData[i] = data[0];
 //			for (int j = 0; j < 2; j++){
 //				data[j] = To_Decimal(data[j]);
 //				TxData[i] = TxData[i] + data[j] * pow(16,(1-j));
@@ -221,10 +221,10 @@ int main(void) {
 		}
 
 		//sending the message
-		TxHeader.ExtId = (heartbeat[0] << 28) + (hexSourceID << 19) + (autonomous[0] << 18) + (messageType[0] << 15) + hexExtraID;
+		TxHeader.ExtId = (heartbeat[0] << 27) + (sourceID[0] << 19) + (autonomous[0] << 18) + (messageType[0] << 15) + extraID[0];
 		TxHeader.RTR = CAN_RTR_DATA;
 		TxHeader.IDE = CAN_ID_EXT;
-		TxHeader.DLC = dataLength[0];
+		TxHeader.DLC = dataLength;
 		TxHeader.TransmitGlobalTime = DISABLE;
 
 			// Request transmisison
