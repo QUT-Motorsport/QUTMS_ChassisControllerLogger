@@ -59,3 +59,9 @@ scripts/__pycache__/
 *.vs/
 
 # End of https://www.gitignore.io/api/atmelstudio
+build/
+
+startup_stm32f302x8.s
+.cortex-debug*.json
+STM32F3*.ld
+.stm32ignore

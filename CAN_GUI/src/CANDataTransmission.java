@@ -75,7 +75,7 @@ public class CANDataTransmission {
             CommPort commPort = portIdentifier.open(portName, 2000);
 
             if (commPort instanceof SerialPort) {
-                serialPort = (SerialPort) commPort;
+                SerialPort serialPort = (SerialPort) commPort;
                 serialPort.setSerialPortParams(BAUDSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 
                 OutputStream os = commPort.getOutputStream();
@@ -97,7 +97,7 @@ public class CANDataTransmission {
             CommPort commPort = portIdentifier.open(portName, 2000);
 
             if (commPort instanceof SerialPort) {
-                serialPort = (SerialPort) commPort;
+                SerialPort serialPort = (SerialPort) commPort;
                 serialPort.setSerialPortParams(BAUDSpeed, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
             }
         }
