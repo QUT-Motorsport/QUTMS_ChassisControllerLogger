@@ -1,5 +1,6 @@
 {
     "java.project.referencedLibraries": [
-        "/usr/share/java/RXTXcomm.jar"
+        "lib/jSerialComm-2.6.2.jar",
+        "'RxTx Library/RXTXcomm.jar"
     ]
 }

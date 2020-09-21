@@ -6,10 +6,10 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Debug (Launch)-Main<CAN_GUI_94fdbb9a>",
+            "name": "Debug (Launch)-Main<CAN_GUI>",
             "request": "launch",
             "mainClass": "Main",
-            "projectName": "CAN_GUI_94fdbb9a"
+            "projectName": "CAN_GUI"
         }
     ]
 }
