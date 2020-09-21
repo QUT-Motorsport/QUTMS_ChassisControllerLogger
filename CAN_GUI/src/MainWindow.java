@@ -283,31 +283,47 @@ public class MainWindow extends JFrame {
         // TODO: replaced with sending code
         CANDataTransmission COM = new CANDataTransmission();
         // Here you have to manually change the values for the ports
-        COM.identifyPort("COM4", 115200);
+//        COM.identifyPort("COM4", 115200);
+//
+//        // heartbeat (0-2)
+//        COM.sendData(message.priority);
+//
+//        //sourceID (max: "Sensors" - 32)
+//        COM.sendData(message.sourceID);
+//
+//        //autonomous (0/1)
+//        COM.sendData(message.autonomous);
+//
+//        //message type (max: "Data transmit" - 3)
+//        COM.sendData(message.messageType);
+//
+//        //extraID (max: 32767 or 15 bits)
+//        COM.sendData(message.extraID);
+//
+//        //data length (max: 8)
+//        COM.sendData(message.dataLength);
+//
+//        //Data (max: 255)
+//        for (int i = 0; i < message.dataLength; ++i)
+//        {
+//            COM.sendData(dataPackets[i]); // each of the data packets
+//        }
 
-        // heartbeat (0-2)
-        COM.sendData(message.priority);
+        COM.setupSelectedPort("COM4", 115200);
 
-        //sourceID (max: "Sensors" - 32)
-        COM.sendData(message.sourceID);
+        byte[] buffer = new byte[6 + dataLength];
 
-        //autonomous (0/1)
-        COM.sendData(message.autonomous);
-
-        //message type (max: "Data transmit" - 3)
-        COM.sendData(message.messageType);
-
-        //extraID (max: 32767 or 15 bits)
-        COM.sendData(message.extraID);
-
-        //data length (max: 8)
-        COM.sendData(message.dataLength);
-
-        //Data (max: 255)
-        for (int i = 0; i < message.dataLength; ++i)
-        {
-            COM.sendData(dataPackets[i]); // each of the data packets
+        buffer[0] = (byte) message.priority;
+        buffer[1] = (byte) message.sourceID;
+        buffer[2] = (byte) message.autonomous;
+        buffer[3] = (byte) message.messageType;
+        buffer[4] = (byte) message.extraID;
+        buffer[5] = (byte) dataLength;
+        for (int i = 6; i < dataLength + 6; i++){
+            buffer[i] = (byte) dataPackets[i - 6];
         }
+
+        COM.sendBuffer(buffer);
 
         RecieveMessage(message);
     }
