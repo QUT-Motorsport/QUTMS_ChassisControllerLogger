@@ -14,6 +14,9 @@ public class Main {
                 mainWindow.setVisible(true);
             }
         });
+//        CANDataTransmission COM = new CANDataTransmission();
+//        COM.setupSelectedPort("COM4",115200);
+//        COM.readData();
 
 
     }

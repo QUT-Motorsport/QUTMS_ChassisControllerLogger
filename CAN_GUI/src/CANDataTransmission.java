@@ -5,6 +5,8 @@ import java.util.ArrayList;
 
 public class CANDataTransmission {
 
+//    public static boolean state = false;
+
     public CANDataTransmission() {
         super();
     }
@@ -131,23 +133,24 @@ public class CANDataTransmission {
 //    }
 
     private SerialPort selectedSerialPort;
-    private com.fazecast.jSerialComm.SerialPort[] serialPortsList;
+    private SerialPort[] serialPortsList;
     private String portName;
 
     /**
      *
      * @return a list of description of the device that connects to this device via USB port
      */
-    public ArrayList<String> getPortDescriptionLists(){
+    public String[] getPortDescriptionLists(){
 
-        this.serialPortsList = com.fazecast.jSerialComm.SerialPort.getCommPorts();
+        this.serialPortsList = SerialPort.getCommPorts();
 
-        ArrayList<String> results = new ArrayList<String>();
+        String[] results = new String[serialPortsList.length];
 
         int i = 0;
 
         while (i < serialPortsList.length){
-            results.add(serialPortsList[i].getSystemPortName());
+            results[i] = (serialPortsList[i].getDescriptivePortName());
+            i++;
         }
 
         return results;
@@ -156,7 +159,6 @@ public class CANDataTransmission {
     /**
      * setup the selected serial port
      * @param portName temporarily parameter for testing
-     * @param selectedSerialPort the selected port to send data or listen
      * @param BAUDSpeed the baudSpeed
      */
     public void setupSelectedPort(String portName, Integer BAUDSpeed){
@@ -190,12 +192,14 @@ public class CANDataTransmission {
      */
 
     public void readData() throws Exception {
-
+        selectedSerialPort.openPort();
         try {
             while (true)
             {
+                System.out.println(selectedSerialPort.bytesAvailable());
                 while(selectedSerialPort.bytesAvailable() == 0)
                     Thread.sleep(20);
+                System.out.println(selectedSerialPort.bytesAvailable() );
                 byte[] readBuffer = new byte[20];
                 int numRead = selectedSerialPort.readBytes(readBuffer, readBuffer.length);
                 System.out.println("numRead: " + numRead);

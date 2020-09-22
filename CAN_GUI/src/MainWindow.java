@@ -35,6 +35,7 @@ public class MainWindow extends JFrame {
             "PDM", "Steering Wheel", "Charger", "Sensors"};
     String[] autonomous = {"No", "Yes"};
     String[] messageType = {"Heartbeat", "Error Detected", "Data Receive", "Data Transmit"};
+    String[] seriaPorts = (new CANDataTransmission()).getPortDescriptionLists();
 
     JComboBox comboMsgPriority;
     JComboBox comboMsgSourceID;
@@ -42,6 +43,9 @@ public class MainWindow extends JFrame {
     JComboBox comboMsgType;
 
     JSpinner spinnerMsgExtra;
+
+    JComboBox comboSerialPort;
+    JSpinner BAUDSpeed;
 
     JTextArea consoleLog;
 
@@ -74,7 +78,7 @@ public class MainWindow extends JFrame {
 
         this.setPreferredSize(new Dimension(900,600));
         this.setMinimumSize(new Dimension(900,600));
-        this.setLayout(new GridLayout(2,1));
+        this.setLayout(new GridLayout(3,1));
 
         JPanel sendMessagePanel = new JPanel();
         JPanel recievedMessagePanel = new JPanel();
@@ -87,6 +91,10 @@ public class MainWindow extends JFrame {
         messageHeaderPanel.setLayout(new GridLayout(1, 5));
 
         String[] headerLabels = {"Priority", "ID", "Autonomous", "Message Type", "Extra ID"};
+
+        // Comm pannel
+        JPanel commPannel = new JPanel();
+        commPannel.setLayout(new GridLayout(1, 3));
 
         // add data fields
 
@@ -139,9 +147,60 @@ public class MainWindow extends JFrame {
         msgInfoWrapper.add(spinnerMsgExtra, BorderLayout.CENTER);
         msgInfoWrapper.add(msgInfoLabel, BorderLayout.NORTH);
 
-
-
         messageHeaderPanel.add(msgInfoWrapper);
+
+        //commpannel
+        comboSerialPort = new JComboBox(seriaPorts);
+        comboSerialPort.setSelectedIndex(seriaPorts.length - 1);
+        comboSerialPort.setMaximumSize( comboSerialPort.getPreferredSize());
+
+        BAUDSpeed = new JSpinner(new SpinnerNumberModel(0, 0, 1000000,1));
+
+        msgInfoWrapper = new JPanel();
+        msgInfoLabel = new JLabel("COM");
+        msgInfoWrapper.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+        msgInfoWrapper.setLayout(new BorderLayout());
+        msgInfoWrapper.add(comboSerialPort, BorderLayout.CENTER);
+        msgInfoWrapper.add(msgInfoLabel, BorderLayout.NORTH);
+
+        commPannel.add(msgInfoWrapper);
+
+        //Baud Pannel
+        msgInfoWrapper = new JPanel();
+        msgInfoLabel = new JLabel("BAUD");
+        msgInfoWrapper.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+        msgInfoWrapper.setLayout(new BorderLayout());
+        msgInfoWrapper.add(BAUDSpeed, BorderLayout.CENTER);
+        msgInfoWrapper.add(msgInfoLabel, BorderLayout.NORTH);
+
+        commPannel.add(msgInfoWrapper);
+
+        this.add(commPannel);
+
+        String listentext = "Sending";
+        JButton listenbutton = new JButton(listentext);
+        listenbutton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    CANDataTransmission COM = new CANDataTransmission();
+                    COM.setupSelectedPort("COM4",115200);
+                    if (listenbutton.getText() == "Sending"){
+                        listenbutton.setText("Listening");
+                        COM.readData();
+                    }
+                    else if (listenbutton.getText() == "Listening") {
+                        listenbutton.setText("Sending");
+                    }
+
+
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+            }
+        });
+        commPannel.add(listenbutton);
+
 
         // message contents panel
         messageContentsPanel.setLayout(new GridLayout(1, MAX_DATA+2));
