@@ -182,32 +182,32 @@ public class MainWindow extends JFrame {
 
         this.add(commPannel);
 
-        String listentext = "Sending";
-        JButton listenbutton = new JButton(listentext);
-        listenbutton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    CANDataTransmission CANRead = new CANDataTransmission();
-
-                    SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
-
-                    CANRead.setupSelectedPort(selectedSerialPort,115200);
-                    if (listenbutton.getText() == "Sending"){
-                        listenbutton.setText("Listening");
-                        CANRead.readData();
-                    }
-                    else if (listenbutton.getText() == "Listening") {
-                        listenbutton.setText("Sending");
-                    }
-
-
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                }
-            }
-        });
-        commPannel.add(listenbutton);
+//        String listentext = "Sending";
+//        JButton listenbutton = new JButton(listentext);
+//        listenbutton.addActionListener(new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                try {
+//                    CANDataTransmission CANRead = new CANDataTransmission();
+//
+//                    SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
+//
+//                    CANRead.setupSelectedPort(selectedSerialPort,115200);
+//                    if (listenbutton.getText() == "Sending"){
+//                        listenbutton.setText("Listening");
+//                        CANRead.readData();
+//                    }
+//                    else if (listenbutton.getText() == "Listening") {
+//                        listenbutton.setText("Sending");
+//                    }
+//
+//
+//                } catch (Exception exception) {
+//                    exception.printStackTrace();
+//                }
+//            }
+//        });
+//        commPannel.add(listenbutton);
 
 
         // message contents panel

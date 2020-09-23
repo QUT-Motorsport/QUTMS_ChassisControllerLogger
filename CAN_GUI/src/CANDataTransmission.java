@@ -251,5 +251,43 @@ public class CANDataTransmission {
         selectedSerialPort.closePort();
     }
 
+    public void readCallback(){
+        selectedSerialPort.openPort();
+        selectedSerialPort.addDataListener(new SerialPortDataListener() {
+            @Override
+            public int getListeningEvents() {
+                return SerialPort.LISTENING_EVENT_DATA_RECEIVED;
+            }
+
+            @Override
+            public void serialEvent(SerialPortEvent event){
+                byte[] readBuffer = new byte[20];
+                int numRead = selectedSerialPort.readBytes(readBuffer, readBuffer.length);
+                System.out.println("numRead: " + numRead);
+                if (numRead < 5) {
+                    System.out.println("invalid message, bad header");
+                }
+                long t_extID = readBuffer[0] | (readBuffer[1] << 8) | (readBuffer[2] << 16) | (readBuffer[3] << 24);
+                int extID = (int)(t_extID & 0x1FFFFFFF);
+                int dlc = readBuffer[4];
+                if (numRead < 5 + dlc) {
+                    System.out.println("invalid message, bad data");
+                    System.out.println("dlc: " + dlc);
+                }
+
+                int[] data = new int[dlc];
+                for (int i = 0; i < dlc; i++) {
+                    data[i] = (int)readBuffer[5+i] & 0xFF;
+                }
+                System.out.println("<------------------------------------------------>");
+                System.out.println("ExtId: " + String.format("0x%08X", extID));
+                System.out.println("dlc: " + dlc);
+                for (int i = 0; i < dlc; i++) {
+                    System.out.print("data["+i+"]: " + data[i] + " ");
+                }
+                System.out.print("\n");
+            }
+        });
+    }
 }
 
