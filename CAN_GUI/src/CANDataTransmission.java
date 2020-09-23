@@ -1,6 +1,8 @@
 //import gnu.io.*;
 
 import com.fazecast.jSerialComm.*;
+
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 public class CANDataTransmission {
@@ -158,28 +160,45 @@ public class CANDataTransmission {
 
     /**
      * setup the selected serial port
-     * @param portName temporarily parameter for testing
+     * @param selectedSerialPort the selected serial port
      * @param BAUDSpeed the baudSpeed
      */
-    public void setupSelectedPort(String portName, Integer BAUDSpeed){
-        this.portName = portName;
-        this.selectedSerialPort = SerialPort.getCommPort(portName);
+    public void setupSelectedPort(SerialPort selectedSerialPort, Integer BAUDSpeed){
+        this.selectedSerialPort = selectedSerialPort;
         this.selectedSerialPort.setComPortParameters(BAUDSpeed, 8, 1, SerialPort.NO_PARITY);
     }
 
 
     /**
-     * send data within the buffer
+     * send the CAN data
      *
-     * @param buffer an array list of buffer
+     * @param canMessage the CAN message
      * @throws Exception
      */
-    public void sendBuffer(byte[] buffer) {
+    public void sendBuffer(CANMessage canMessage) {
         try {
 
-            selectedSerialPort.openPort();
-            selectedSerialPort.writeBytes(buffer, buffer.length);
-            selectedSerialPort.closePort();
+            byte[] buffer = new byte[6 + canMessage.dataLength];
+            buffer[0] = (byte) canMessage.priority;
+            buffer[1] = (byte) canMessage.sourceID;
+            buffer[2] = (byte) canMessage.autonomous;
+            buffer[3] = (byte) canMessage.messageType;
+            buffer[4] = (byte) canMessage.extraID;
+            buffer[5] = (byte) canMessage.dataLength;
+            for (int i = 0; i < canMessage.dataLength; i++){
+                buffer[i + 6] = (byte) canMessage.data[i];
+            }
+
+            for (int i = 0; i < buffer.length; i++){
+                selectedSerialPort.openPort();
+
+                OutputStream o = selectedSerialPort.getOutputStream();
+                o.write(buffer[i]);
+                o.close();
+
+                selectedSerialPort.closePort();
+
+            }
 
         } catch (Exception e ){
             System.out.println(e);

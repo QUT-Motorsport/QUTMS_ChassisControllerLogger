@@ -1,4 +1,5 @@
 
+import com.fazecast.jSerialComm.SerialPort;
 import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.UnsupportedCommOperationException;
@@ -35,7 +36,9 @@ public class MainWindow extends JFrame {
             "PDM", "Steering Wheel", "Charger", "Sensors"};
     String[] autonomous = {"No", "Yes"};
     String[] messageType = {"Heartbeat", "Error Detected", "Data Receive", "Data Transmit"};
-    String[] seriaPorts = (new CANDataTransmission()).getPortDescriptionLists();
+
+
+
 
     JComboBox comboMsgPriority;
     JComboBox comboMsgSourceID;
@@ -46,6 +49,8 @@ public class MainWindow extends JFrame {
 
     JComboBox comboSerialPort;
     JSpinner BAUDSpeed;
+    String[] serialPortsDescriptions = (new CANDataTransmission()).getPortDescriptionLists();
+    SerialPort[] serialPorts = SerialPort.getCommPorts();
 
     JTextArea consoleLog;
 
@@ -150,11 +155,11 @@ public class MainWindow extends JFrame {
         messageHeaderPanel.add(msgInfoWrapper);
 
         //commpannel
-        comboSerialPort = new JComboBox(seriaPorts);
-        comboSerialPort.setSelectedIndex(seriaPorts.length - 1);
+        comboSerialPort = new JComboBox(serialPortsDescriptions);
+        comboSerialPort.setSelectedIndex(serialPortsDescriptions.length - 1);
         comboSerialPort.setMaximumSize( comboSerialPort.getPreferredSize());
 
-        BAUDSpeed = new JSpinner(new SpinnerNumberModel(0, 0, 1000000,1));
+        BAUDSpeed = new JSpinner(new SpinnerNumberModel(115200, 0, 1000000,1));
 
         msgInfoWrapper = new JPanel();
         msgInfoLabel = new JLabel("COM");
@@ -183,11 +188,14 @@ public class MainWindow extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    CANDataTransmission COM = new CANDataTransmission();
-                    COM.setupSelectedPort("COM4",115200);
+                    CANDataTransmission CANRead = new CANDataTransmission();
+
+                    SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
+
+                    CANRead.setupSelectedPort(selectedSerialPort,115200);
                     if (listenbutton.getText() == "Sending"){
                         listenbutton.setText("Listening");
-                        COM.readData();
+                        CANRead.readData();
                     }
                     else if (listenbutton.getText() == "Listening") {
                         listenbutton.setText("Sending");
@@ -340,49 +348,15 @@ public class MainWindow extends JFrame {
         AddToLog("Send Message");
 
         // TODO: replaced with sending code
-        CANDataTransmission COM = new CANDataTransmission();
-        // Here you have to manually change the values for the ports
-//        COM.identifyPort("COM4", 115200);
-//
-//        // heartbeat (0-2)
-//        COM.sendData(message.priority);
-//
-//        //sourceID (max: "Sensors" - 32)
-//        COM.sendData(message.sourceID);
-//
-//        //autonomous (0/1)
-//        COM.sendData(message.autonomous);
-//
-//        //message type (max: "Data transmit" - 3)
-//        COM.sendData(message.messageType);
-//
-//        //extraID (max: 32767 or 15 bits)
-//        COM.sendData(message.extraID);
-//
-//        //data length (max: 8)
-//        COM.sendData(message.dataLength);
-//
-//        //Data (max: 255)
-//        for (int i = 0; i < message.dataLength; ++i)
-//        {
-//            COM.sendData(dataPackets[i]); // each of the data packets
-//        }
 
-        COM.setupSelectedPort("COM4", 115200);
+        CANDataTransmission CANSend = new CANDataTransmission();
 
-        byte[] buffer = new byte[6 + dataLength];
+        SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
+        Integer selectedBAUDSpeed = (Integer) BAUDSpeed.getValue();
 
-        buffer[0] = (byte) message.priority;
-        buffer[1] = (byte) message.sourceID;
-        buffer[2] = (byte) message.autonomous;
-        buffer[3] = (byte) message.messageType;
-        buffer[4] = (byte) message.extraID;
-        buffer[5] = (byte) dataLength;
-        for (int i = 6; i < dataLength + 6; i++){
-            buffer[i] = (byte) dataPackets[i - 6];
-        }
+        CANSend.setupSelectedPort(selectedSerialPort, selectedBAUDSpeed);
 
-        COM.sendBuffer(buffer);
+        CANSend.sendBuffer(message);
 
         RecieveMessage(message);
     }
