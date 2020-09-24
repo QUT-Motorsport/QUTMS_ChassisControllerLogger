@@ -71,7 +71,7 @@ uint8_t dataLength;
 uint8_t data[1];
 uint8_t TxData[8];
 
-const bool sender = true;
+const bool sender = false;
 
 // UART char buffer
 char msg[140];

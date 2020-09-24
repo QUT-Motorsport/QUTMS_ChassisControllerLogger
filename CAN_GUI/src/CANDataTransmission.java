@@ -1,9 +1,13 @@
 //import gnu.io.*;
 
 import com.fazecast.jSerialComm.*;
+
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 public class CANDataTransmission {
+
+//    public static boolean state = false;
 
     public CANDataTransmission() {
         super();
@@ -131,23 +135,24 @@ public class CANDataTransmission {
 //    }
 
     private SerialPort selectedSerialPort;
-    private com.fazecast.jSerialComm.SerialPort[] serialPortsList;
+    private SerialPort[] serialPortsList;
     private String portName;
 
     /**
      *
      * @return a list of description of the device that connects to this device via USB port
      */
-    public ArrayList<String> getPortDescriptionLists(){
+    public String[] getPortDescriptionLists(){
 
-        this.serialPortsList = com.fazecast.jSerialComm.SerialPort.getCommPorts();
+        this.serialPortsList = SerialPort.getCommPorts();
 
-        ArrayList<String> results = new ArrayList<String>();
+        String[] results = new String[serialPortsList.length];
 
         int i = 0;
 
         while (i < serialPortsList.length){
-            results.add(serialPortsList[i].getSystemPortName());
+            results[i] = (serialPortsList[i].getDescriptivePortName());
+            i++;
         }
 
         return results;
@@ -155,29 +160,45 @@ public class CANDataTransmission {
 
     /**
      * setup the selected serial port
-     * @param portName temporarily parameter for testing
-     * @param selectedSerialPort the selected port to send data or listen
+     * @param selectedSerialPort the selected serial port
      * @param BAUDSpeed the baudSpeed
      */
-    public void setupSelectedPort(String portName, Integer BAUDSpeed){
-        this.portName = portName;
-        this.selectedSerialPort = SerialPort.getCommPort(portName);
+    public void setupSelectedPort(SerialPort selectedSerialPort, Integer BAUDSpeed){
+        this.selectedSerialPort = selectedSerialPort;
         this.selectedSerialPort.setComPortParameters(BAUDSpeed, 8, 1, SerialPort.NO_PARITY);
     }
 
 
     /**
-     * send data within the buffer
+     * send the CAN data
      *
-     * @param buffer an array list of buffer
+     * @param canMessage the CAN message
      * @throws Exception
      */
-    public void sendBuffer(byte[] buffer) {
+    public void sendBuffer(CANMessage canMessage) {
         try {
 
-            selectedSerialPort.openPort();
-            selectedSerialPort.writeBytes(buffer, buffer.length);
-            selectedSerialPort.closePort();
+            byte[] buffer = new byte[6 + canMessage.dataLength];
+            buffer[0] = (byte) canMessage.priority;
+            buffer[1] = (byte) canMessage.sourceID;
+            buffer[2] = (byte) canMessage.autonomous;
+            buffer[3] = (byte) canMessage.messageType;
+            buffer[4] = (byte) canMessage.extraID;
+            buffer[5] = (byte) canMessage.dataLength;
+            for (int i = 0; i < canMessage.dataLength; i++){
+                buffer[i + 6] = (byte) canMessage.data[i];
+            }
+
+            for (int i = 0; i < buffer.length; i++){
+                selectedSerialPort.openPort();
+
+                OutputStream o = selectedSerialPort.getOutputStream();
+                o.write(buffer[i]);
+                o.close();
+
+                selectedSerialPort.closePort();
+
+            }
 
         } catch (Exception e ){
             System.out.println(e);
@@ -190,12 +211,14 @@ public class CANDataTransmission {
      */
 
     public void readData() throws Exception {
-
+        selectedSerialPort.openPort();
         try {
             while (true)
             {
+                System.out.println(selectedSerialPort.bytesAvailable());
                 while(selectedSerialPort.bytesAvailable() == 0)
                     Thread.sleep(20);
+                System.out.println(selectedSerialPort.bytesAvailable() );
                 byte[] readBuffer = new byte[20];
                 int numRead = selectedSerialPort.readBytes(readBuffer, readBuffer.length);
                 System.out.println("numRead: " + numRead);
@@ -228,5 +251,43 @@ public class CANDataTransmission {
         selectedSerialPort.closePort();
     }
 
+    public void readCallback(){
+        selectedSerialPort.openPort();
+        selectedSerialPort.addDataListener(new SerialPortDataListener() {
+            @Override
+            public int getListeningEvents() {
+                return SerialPort.LISTENING_EVENT_DATA_RECEIVED;
+            }
+
+            @Override
+            public void serialEvent(SerialPortEvent event){
+                byte[] readBuffer = new byte[20];
+                int numRead = selectedSerialPort.readBytes(readBuffer, readBuffer.length);
+                System.out.println("numRead: " + numRead);
+                if (numRead < 5) {
+                    System.out.println("invalid message, bad header");
+                }
+                long t_extID = readBuffer[0] | (readBuffer[1] << 8) | (readBuffer[2] << 16) | (readBuffer[3] << 24);
+                int extID = (int)(t_extID & 0x1FFFFFFF);
+                int dlc = readBuffer[4];
+                if (numRead < 5 + dlc) {
+                    System.out.println("invalid message, bad data");
+                    System.out.println("dlc: " + dlc);
+                }
+
+                int[] data = new int[dlc];
+                for (int i = 0; i < dlc; i++) {
+                    data[i] = (int)readBuffer[5+i] & 0xFF;
+                }
+                System.out.println("<------------------------------------------------>");
+                System.out.println("ExtId: " + String.format("0x%08X", extID));
+                System.out.println("dlc: " + dlc);
+                for (int i = 0; i < dlc; i++) {
+                    System.out.print("data["+i+"]: " + data[i] + " ");
+                }
+                System.out.print("\n");
+            }
+        });
+    }
 }
 
