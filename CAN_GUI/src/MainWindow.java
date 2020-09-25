@@ -1,8 +1,5 @@
 
 import com.fazecast.jSerialComm.SerialPort;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
-import gnu.io.UnsupportedCommOperationException;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,13 +11,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
-public class MainWindow extends JFrame {
+public class MainWindow extends JFrame implements CANDataTransmission.IReceiveCANCallback{
     private final String windowTitle = "QUTMS CAN Logger";
     private final int MAX_DATA = 8;
 
@@ -36,9 +33,9 @@ public class MainWindow extends JFrame {
             "PDM", "Steering Wheel", "Charger", "Sensors"};
     String[] autonomous = {"No", "Yes"};
     String[] messageType = {"Heartbeat", "Error Detected", "Data Receive", "Data Transmit"};
+    String[] serialPorts;
 
-
-
+    SerialPort[] sp = SerialPort.getCommPorts();
 
     JComboBox comboMsgPriority;
     JComboBox comboMsgSourceID;
@@ -49,14 +46,12 @@ public class MainWindow extends JFrame {
 
     JComboBox comboSerialPort;
     JSpinner BAUDSpeed;
-    String[] serialPortsDescriptions = (new CANDataTransmission()).getPortDescriptionLists();
-    SerialPort[] serialPorts = SerialPort.getCommPorts();
 
     JTextArea consoleLog;
 
     CANMessageTableModel CANTableModel;
 
-
+    CANDataTransmission cdt;
 
 
 
@@ -81,7 +76,7 @@ public class MainWindow extends JFrame {
             }
         });
 
-        this.setPreferredSize(new Dimension(900,600));
+        this.setPreferredSize(new Dimension(1000,600));
         this.setMinimumSize(new Dimension(900,600));
         this.setLayout(new GridLayout(3,1));
 
@@ -97,9 +92,9 @@ public class MainWindow extends JFrame {
 
         String[] headerLabels = {"Priority", "ID", "Autonomous", "Message Type", "Extra ID"};
 
-        // Comm pannel
-        JPanel commPannel = new JPanel();
-        commPannel.setLayout(new GridLayout(1, 3));
+        //Comm panel
+        JPanel commPanel = new JPanel();
+        commPanel.setLayout(new GridLayout(1,2));
 
         // add data fields
 
@@ -154,12 +149,28 @@ public class MainWindow extends JFrame {
 
         messageHeaderPanel.add(msgInfoWrapper);
 
-        //commpannel
-        comboSerialPort = new JComboBox(serialPortsDescriptions);
-        comboSerialPort.setSelectedIndex(serialPortsDescriptions.length - 1);
+        cdt = new CANDataTransmission(this);
+
+        //commPanel
+        serialPorts = cdt.getPortDescriptionLists();
+        comboSerialPort = new JComboBox(serialPorts);
+        comboSerialPort.setSelectedIndex(serialPorts.length - 1);
+
+        comboSerialPort.addActionListener(new ActionListener() {
+                                              @Override
+                                              public void actionPerformed(ActionEvent e) {
+
+                                                  cdt.setupSelectedPort(sp[comboSerialPort.getSelectedIndex()], (Integer) BAUDSpeed.getValue());
+
+                                              }
+                                          }
+        );
+
         comboSerialPort.setMaximumSize( comboSerialPort.getPreferredSize());
 
         BAUDSpeed = new JSpinner(new SpinnerNumberModel(115200, 0, 1000000,1));
+
+        cdt.setupSelectedPort(sp[comboSerialPort.getSelectedIndex()], (Integer) BAUDSpeed.getValue());
 
         msgInfoWrapper = new JPanel();
         msgInfoLabel = new JLabel("COM");
@@ -168,47 +179,18 @@ public class MainWindow extends JFrame {
         msgInfoWrapper.add(comboSerialPort, BorderLayout.CENTER);
         msgInfoWrapper.add(msgInfoLabel, BorderLayout.NORTH);
 
-        commPannel.add(msgInfoWrapper);
+        commPanel.add(msgInfoWrapper);
 
-        //Baud Pannel
         msgInfoWrapper = new JPanel();
-        msgInfoLabel = new JLabel("BAUD");
+        msgInfoLabel = new JLabel("BAUDSpeed");
         msgInfoWrapper.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
         msgInfoWrapper.setLayout(new BorderLayout());
         msgInfoWrapper.add(BAUDSpeed, BorderLayout.CENTER);
         msgInfoWrapper.add(msgInfoLabel, BorderLayout.NORTH);
 
-        commPannel.add(msgInfoWrapper);
+        commPanel.add(msgInfoWrapper);
 
-        this.add(commPannel);
-
-//        String listentext = "Sending";
-//        JButton listenbutton = new JButton(listentext);
-//        listenbutton.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                try {
-//                    CANDataTransmission CANRead = new CANDataTransmission();
-//
-//                    SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
-//
-//                    CANRead.setupSelectedPort(selectedSerialPort,115200);
-//                    if (listenbutton.getText() == "Sending"){
-//                        listenbutton.setText("Listening");
-//                        CANRead.readData();
-//                    }
-//                    else if (listenbutton.getText() == "Listening") {
-//                        listenbutton.setText("Sending");
-//                    }
-//
-//
-//                } catch (Exception exception) {
-//                    exception.printStackTrace();
-//                }
-//            }
-//        });
-//        commPannel.add(listenbutton);
-
+        this.add(commPanel);
 
         // message contents panel
         messageContentsPanel.setLayout(new GridLayout(1, MAX_DATA+2));
@@ -261,11 +243,7 @@ public class MainWindow extends JFrame {
         btnSendMessage.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    SendMessage();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                }
+                SendMessage();
             }
         });
         messageContentsPanel.add(btnSendMessage);
@@ -313,52 +291,58 @@ public class MainWindow extends JFrame {
         this.add(sendMessagePanel);
         this.add(recievedMessagePanel);
         this.pack();
+
     }
 
     /**
      * Called when a CAN message is received over serial
-     * @param message
+     *
      */
-    public void RecieveMessage(CANMessage message) {
+    public void ReceiveMessage() {
+        long extID = cdt.getExtID();
+        byte[] rawData = cdt.getData();
+        int dlc = cdt.getLength();
+        int[] data;
+        if (dlc == 0) {
+            data = null;
+        } else {
+            data = new int[dlc];
+            for (int i = 0; i < data.length; i++) {
+                data[i] = rawData[i];
+            }
+        }
+
+
+        CANMessage message = new CANMessage(LocalDateTime.now(), "", "", "", "", 0, dlc, data);
         CANTableModel.AddMessage(message);
-        AddToLog("Received Message");
     }
 
     /**
      * Called Send button is clicked
      * Creates a CAN message out of the current fields
      */
-    public void SendMessage() throws Exception {
+    public void SendMessage() {
         // grab data length and packets
-        int dataLength = (int) spinnerDataLength.getValue();
+        int dataLength = (int)spinnerDataLength.getValue();
         int[] dataPackets = new int[dataLength];
         for (int i = 0; i < dataLength; i++) {
-            dataPackets[i] = (int) spinnerDataBytes[i].getValue();
+            dataPackets[i] = (int)spinnerDataBytes[i].getValue();
         }
 
         System.out.println(Arrays.toString(dataPackets));
 
-        String priority = (String) comboMsgPriority.getSelectedItem();
-        String sourceID = (String) comboMsgSourceID.getSelectedItem();
-        String autonomous = (String) comboMsgAutonomous.getSelectedItem();
-        String messageType = (String) comboMsgType.getSelectedItem();
-        int extraID = (int) spinnerMsgExtra.getValue();
+        String priority = (String)comboMsgPriority.getSelectedItem();
+        String sourceID = (String)comboMsgSourceID.getSelectedItem();
+        String autonomous = (String)comboMsgAutonomous.getSelectedItem();
+        String messageType = (String)comboMsgType.getSelectedItem();
+        int extraID = (int)spinnerMsgExtra.getValue();
 
         CANMessage message = new CANMessage(LocalDateTime.now(), priority, sourceID, autonomous, messageType, extraID, dataLength, dataPackets);
         AddToLog("Send Message");
 
-        // TODO: replaced with sending code
 
-        CANDataTransmission CANSend = new CANDataTransmission();
-
-        SerialPort selectedSerialPort = serialPorts[comboSerialPort.getSelectedIndex()];
-        Integer selectedBAUDSpeed = (Integer) BAUDSpeed.getValue();
-
-        CANSend.setupSelectedPort(selectedSerialPort, selectedBAUDSpeed);
-
-        CANSend.sendBuffer(message);
-
-        RecieveMessage(message);
+        // TODO: replace this with serial sending code
+        //RecveMessage();
     }
 
     public void AddToLog(String message) {
