@@ -62,16 +62,20 @@ uint32_t TxMailbox;
 
 uint8_t result;
 
+
 uint8_t heartbeat[1];
 uint8_t sourceID[1];
 uint8_t autonomous[1];
 uint8_t messageType[1];
 uint8_t extraID[1];
+
+uint8_t extID[4];
+
 uint8_t dataLength;
-uint8_t data[1];
+uint8_t data[8];
 uint8_t TxData[8];
 
-const bool sender = false;
+const bool sender = true;
 
 // UART char buffer
 char msg[140];
@@ -129,9 +133,9 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 
 	// Confirm startup to terminal
-	snprintf(msg, sizeof(msg) - 1, "Initialization Succeed!!\r\n");
-	printf("hi there!");
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//	snprintf(msg, sizeof(msg) - 1, "Initialization Succeed!!\r\n");
+//	printf("hi there!");
+//	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
 	/* USER CODE END 2 */
 
@@ -141,87 +145,95 @@ int main(void) {
 
 		if(sender){
 
-		snprintf(msg, sizeof(msg) - 1, "Input the external ID here! \r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input heartbeat
-		snprintf(msg, sizeof(msg) - 1, "Heart is turned on? (0/1):");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)heartbeat, 1, HAL_MAX_DELAY);
-//		heartbeat[0] = To_Decimal(heartbeat[0]);
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input source ID
-		snprintf(msg, sizeof(msg) - 1, "Source ID (in hexadecimal): 0x");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 1, HAL_MAX_DELAY);
-//		long int hexSourceID;
-//		hexSourceID = 0;
-//		for (int i = 0; i < 2; i++){
-//			//sourceID[i] = To_Decimal(sourceID[i]);
-//			hexSourceID = hexSourceID + sourceID[i] * pow(16,(2 - i));
+////		snprintf(msg, sizeof(msg) - 1, "Input the external ID here! \r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input heartbeat
+////		snprintf(msg, sizeof(msg) - 1, "Heart is turned on? (0/1):");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, (uint8_t*)heartbeat, 1, HAL_MAX_DELAY);
+////		heartbeat[0] = To_Decimal(heartbeat[0]);
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input source ID
+////		snprintf(msg, sizeof(msg) - 1, "Source ID (in hexadecimal): 0x");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, (uint8_t*)sourceID, 1, HAL_MAX_DELAY);
+////		long int hexSourceID;
+////		hexSourceID = 0;
+////		for (int i = 0; i < 2; i++){
+////			//sourceID[i] = To_Decimal(sourceID[i]);
+////			hexSourceID = hexSourceID + sourceID[i] * pow(16,(2 - i));
+////		}
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input autonomous
+////		snprintf(msg, sizeof(msg) - 1, "Autonomous is turned on? (0/1): ");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, (uint8_t*)autonomous, 1, HAL_MAX_DELAY);
+////		autonomous[0] = To_Decimal(autonomous[0]);
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input message types
+////		snprintf(msg, sizeof(msg) - 1, "Message Type (in hexadecimal): 0x");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, (uint8_t*)messageType, 1, HAL_MAX_DELAY);
+////		messageType[0] = To_Decimal(messageType[0]);
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input extra ID
+////		snprintf(msg, sizeof(msg) - 1, "Extra ID (in hexadecimal): 0x");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 1, HAL_MAX_DELAY);
+////		long int hexExtraID;
+////		hexExtraID = 0;
+////		for (int i = 0; i < 2; i++){
+//////			extraID[i] = To_Decimal(extraID[i]);
+////			hexExtraID = hexExtraID + extraID[i] * pow(16,(3 - i));
+////		}
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input the data length
+////		snprintf(msg, sizeof(msg) - 1, "Input the data length: ");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		HAL_UART_Receive(&huart2, &dataLength, 1, HAL_MAX_DELAY);
+////		dataLength[0] = To_Decimal(dataLength[0]);
+////		snprintf(msg, sizeof(msg) - 1, "\r\n");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//
+//		//input data
+////		snprintf(msg, sizeof(msg) - 1, "Input the data! \r\n ");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//		for (int i = 0; i < dataLength; i++){
+////			snprintf(msg, sizeof(msg) - 1, "Data[%d]: ",i);
+////			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//			HAL_UART_Receive(&huart2, (uint8_t*)data, 1, HAL_MAX_DELAY);
+//			TxData[i] = data[0];
+////			for (int j = 0; j < 2; j++){
+////				data[j] = To_Decimal(data[j]);
+////				TxData[i] = TxData[i] + data[j] * pow(16,(1-j));
+////			}
+////		snprintf(msg, sizeof(msg) - 1, "\r\n ");
+////		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 //		}
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
-		//input autonomous
-		snprintf(msg, sizeof(msg) - 1, "Autonomous is turned on? (0/1): ");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)autonomous, 1, HAL_MAX_DELAY);
-//		autonomous[0] = To_Decimal(autonomous[0]);
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input message types
-		snprintf(msg, sizeof(msg) - 1, "Message Type (in hexadecimal): 0x");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)messageType, 1, HAL_MAX_DELAY);
-//		messageType[0] = To_Decimal(messageType[0]);
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input extra ID
-		snprintf(msg, sizeof(msg) - 1, "Extra ID (in hexadecimal): 0x");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, (uint8_t*)extraID, 1, HAL_MAX_DELAY);
-//		long int hexExtraID;
-//		hexExtraID = 0;
-//		for (int i = 0; i < 2; i++){
-////			extraID[i] = To_Decimal(extraID[i]);
-//			hexExtraID = hexExtraID + extraID[i] * pow(16,(3 - i));
-//		}
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input the data length
-		snprintf(msg, sizeof(msg) - 1, "Input the data length: ");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		HAL_UART_Receive(&huart2, &dataLength, 1, HAL_MAX_DELAY);
-//		dataLength[0] = To_Decimal(dataLength[0]);
-		snprintf(msg, sizeof(msg) - 1, "\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-
-		//input data
-		snprintf(msg, sizeof(msg) - 1, "Input the data! \r\n ");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		for (int i = 0; i < dataLength; i++){
-			snprintf(msg, sizeof(msg) - 1, "Data[%d]: ",i);
-			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-			HAL_UART_Receive(&huart2, (uint8_t*)data, 1, HAL_MAX_DELAY);
-			TxData[i] = data[0];
-//			for (int j = 0; j < 2; j++){
-//				data[j] = To_Decimal(data[j]);
-//				TxData[i] = TxData[i] + data[j] * pow(16,(1-j));
-//			}
-		snprintf(msg, sizeof(msg) - 1, "\r\n ");
-		HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-		}
+		HAL_UART_Receive(&huart2, (uint8_t*)extID, 4, HAL_MAX_DELAY);
 
 		//sending the message
-		TxHeader.ExtId = (heartbeat[0] << 27) + (sourceID[0] << 19) + (autonomous[0] << 18) + (messageType[0] << 15) + extraID[0];
+//		TxHeader.ExtId = (heartbeat[0] << 27) + (sourceID[0] << 19) + (autonomous[0] << 18) + (messageType[0] << 15) + extraID[0];
+		TxHeader.ExtId = (extID[0] << 24) + (extID[1] << 16) + (extID[2] << 8) + (extID[3]);
+
+		HAL_UART_Receive(&huart2, &dataLength, 1, HAL_MAX_DELAY);
+
+		HAL_UART_Receive(&huart2, (uint8_t*)TxData, dataLength, HAL_MAX_DELAY);
+
 		TxHeader.RTR = CAN_RTR_DATA;
 		TxHeader.IDE = CAN_ID_EXT;
 		TxHeader.DLC = dataLength;
@@ -233,9 +245,9 @@ int main(void) {
 				Error_Handler();
 			}
 
-			snprintf(msg, sizeof(msg) - 1, "byte 0:  %d\r\n", TxData[0]);
-			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
-					HAL_MAX_DELAY);
+//			snprintf(msg, sizeof(msg) - 1, "byte 0:  %d\r\n", TxData[0]);
+//			HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
+//					HAL_MAX_DELAY);
 		}
 	}
 	HAL_Delay(1000);
@@ -325,6 +337,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
 			Error_Handler();
 		}
+
+//		if (HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
+//		HAL_MAX_DELAY) != HAL_OK) {
+//
+//			Error_Handler();
+//		}
 	}
 }
 

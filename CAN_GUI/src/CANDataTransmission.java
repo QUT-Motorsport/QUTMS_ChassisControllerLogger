@@ -1,8 +1,6 @@
 
 import com.fazecast.jSerialComm.*;
 
-import java.io.*;
-
 public class CANDataTransmission {
     public interface IReceiveCANCallback{
 
@@ -152,33 +150,64 @@ public class CANDataTransmission {
      *
      * @param canMessage the CAN message
      * @throws Exception
+     * @return
      */
-    public void sendBuffer(CANMessage canMessage) {
-        try {
+        public void sendBuffer (CANMessage canMessage){
+            try {
 
-            byte[] buffer = new byte[6 + canMessage.dataLength];
-            buffer[0] = (byte) canMessage.priority;
-            buffer[1] = (byte) canMessage.sourceID;
-            buffer[2] = (byte) canMessage.autonomous;
-            buffer[3] = (byte) canMessage.messageType;
-            buffer[4] = (byte) canMessage.extraID;
-            buffer[5] = (byte) canMessage.dataLength;
-            for (int i = 0; i < canMessage.dataLength; i++){
-                buffer[i + 6] = (byte) canMessage.data[i];
+//            byte[] buffer = new byte[6 + canMessage.dataLength];
+//            buffer[0] = (byte) canMessage.priority;
+//            buffer[1] = (byte) canMessage.sourceID;
+//            buffer[2] = (byte) canMessage.autonomous;
+//            buffer[3] = (byte) canMessage.messageType;
+//            buffer[4] = (byte) canMessage.extraID;
+//            buffer[5] = (byte) canMessage.dataLength;
+//            for (int i = 0; i < canMessage.dataLength; i++){
+//                buffer[i + 6] = (byte) canMessage.data[i];
+//            }
+
+                long extID = (canMessage.priority << 24) | (canMessage.sourceID << 16) | (canMessage.autonomous << 15) | (canMessage.messageType << 12) | canMessage.extraID;
+
+                System.out.print(extID);
+                byte[] extIDBuffer = new byte[4];
+//                extIDBuffer[0] = (byte) extractSub(extID, 8, 0);
+//                extIDBuffer[1] = (byte) extractSub(extID, 8, 8);
+//                extIDBuffer[2] = (byte) extractSub(extID, 8, 16);
+//                extIDBuffer[3] = (byte) extractSub(extID, 8, 24);
+
+                selectedSerialPort.writeBytes(extIDBuffer, 4);
+
+                byte[] dlcBuffer = new byte[1];
+                dlcBuffer[0] = (byte) canMessage.dataLength;
+                selectedSerialPort.writeBytes(dlcBuffer, 1);
+
+                byte[] dataBuffer = new byte[8];
+
+                for (int i = 0; i < canMessage.dataLength; i++) {
+                    dataBuffer[i] = (byte) canMessage.data[i];
+                }
+                selectedSerialPort.writeBytes(dataBuffer, canMessage.dataLength);
+//
+//            for (int i = 0; i < buffer.length; i++){
+//
+//                OutputStream o = selectedSerialPort.getOutputStream();
+//                o.write(buffer[i]);
+//
+//
+//            }
+
+            } catch (Exception e) {
+                System.out.println(e);
             }
-
-            for (int i = 0; i < buffer.length; i++){
-
-                OutputStream o = selectedSerialPort.getOutputStream();
-                o.write(buffer[i]);
-
-
-            }
-
-        } catch (Exception e ){
-            System.out.println(e);
         }
-    }
+
+//        public static long extractSub (final long l, final int nrBits, final int offset)
+//        {
+//            final long rightShifted = l >>> offset;
+//            final long mask = (1L << nrBits) - 1L;
+//            return rightShifted & mask;
+//        }
+//    }
 
 }
 
