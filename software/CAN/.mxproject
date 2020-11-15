@@ -12,8 +12,8 @@ HeaderPath=Drivers\STM32F3xx_HAL_Driver\Inc;Drivers\STM32F3xx_HAL_Driver\Inc\Leg
 CDefines=USE_HAL_DRIVER;STM32F302x8;USE_HAL_DRIVER;USE_HAL_DRIVER;
 
 [PreviousGenFiles]
-HeaderPath=C:/Users/Motorsports/Documents/Github/QUTMS_DataLogger-Trong-Dat/CAN/Inc
+HeaderPath=C:/Users/Motorsports/Desktop/git/QUTMS_DataLogger/software/CAN/Inc
 HeaderFiles=gpio.h;can.h;usart.h;stm32f3xx_it.h;stm32f3xx_hal_conf.h;main.h;
-SourcePath=C:/Users/Motorsports/Documents/Github/QUTMS_DataLogger-Trong-Dat/CAN/Src
+SourcePath=C:/Users/Motorsports/Desktop/git/QUTMS_DataLogger/software/CAN/Src
 SourceFiles=gpio.c;can.c;usart.c;stm32f3xx_it.c;stm32f3xx_hal_msp.c;main.c;
 

@@ -67,11 +67,12 @@ uint8_t autonomous[1];
 uint8_t messageType[1];
 uint8_t extraID[1];
 
-uint8_t extID[4];
-
-uint8_t dataLength;
+//uint8_t extID[4];
+uint8_t header[5];
+//uint8_t dataLength;
 uint8_t data[8];
 uint8_t TxData[8];
+uint8_t RxData[8];
 
 const bool sender = true;
 
@@ -85,7 +86,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 //CALL BACK
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 
 //USART IRQ handler
 void USART2_IRQHandler(void);
@@ -100,62 +101,79 @@ double To_Decimal(uint8_t input);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+	/* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_CAN_Init();
-  MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_CAN_Init();
+	MX_USART2_UART_Init();
+	/* USER CODE BEGIN 2 */
 
-    //TxData[0] = 0;
+	TxData[0] = 0;
+
+	CAN_FilterTypeDef sFilterConfig;
+
+	sFilterConfig.FilterBank = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+	sFilterConfig.FilterActivation = ENABLE;
+
+	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+		Error_Handler();
+
+	/* Start the CAN peripheral */
+	if (HAL_CAN_Start(&hcan) != HAL_OK)
+		Error_Handler();
+
+	TxHeader.RTR = CAN_RTR_DATA;
+	TxHeader.IDE = CAN_ID_EXT;
+	TxHeader.TransmitGlobalTime = DISABLE;
 
 	// Confirm startup to terminal
-  /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+
 	while (1) {
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-		HAL_UART_Receive(&huart2, (uint8_t*) extID, 4, HAL_MAX_DELAY);
+		HAL_UART_Receive(&huart2, (uint8_t*) header, 5, HAL_MAX_DELAY);
+		TxHeader.ExtId = (header[0] << 24) + (header[1] << 16)
+				+ (header[2] << 8) + (header[3]);
+		TxHeader.DLC = header[4];
 
-		//sending the message
-		//TxHeader.ExtId =0x02;
-		TxHeader.ExtId = (extID[0] << 24) + (extID[1] << 16) + (extID[2] << 8) + (extID[3]);
-
-		HAL_UART_Receive(&huart2, &dataLength, 1, HAL_MAX_DELAY);
-
-		HAL_UART_Receive(&huart2, (uint8_t*) TxData, dataLength, HAL_MAX_DELAY);
-
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.IDE = CAN_ID_EXT;
-		TxHeader.DLC = datalength;
-		TxHeader.TransmitGlobalTime = DISABLE;
-		TxData[0]++;
-		TxData[1] = 2;
+		if (header[4] > 0) {
+			HAL_UART_Receive(&huart2, (uint8_t*) TxData, header[4],
+			HAL_MAX_DELAY);
+		}
 
 		// Request transmisison
 		if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox)
@@ -163,49 +181,63 @@ int main(void)
 			Error_Handler();
 		}
 
-		HAL_Delay(1000);
-    /* USER CODE END WHILE */
+		// check for recieved CAN messages
+		while (HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) > 0) {
 
-    /* USER CODE BEGIN 3 */
+			HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
+			uint8_t uart_msg[13];
+			uart_msg[0] = RxHeader.ExtId;
+			uart_msg[1] = RxHeader.ExtId >> 8;
+			uart_msg[2] = RxHeader.ExtId >> 16;
+			uart_msg[3] = RxHeader.ExtId >> 24;
+			uart_msg[4] = RxHeader.DLC;
+			for (int i = 0; i < RxHeader.DLC; i++) {
+				uart_msg[4+i] = RxData[i];
+			}
+
+			HAL_UART_Transmit(&huart2, uart_msg, 5 + RxHeader.DLC, HAL_MAX_DELAY);
+
+		}
+
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
 	}
-  /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-  /** Initializes the CPU, AHB and APB busses clocks
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB busses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
@@ -215,121 +247,12 @@ void SystemClock_Config(void)
  * @brief System Clock Configuration
  * @retval None
  */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-	// called when there's a message waiting in the FIFO RX buffer
-
-		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
-		/* Reception Error */
-		Error_Handler();
-	} else {
-		// message read successfully
-
-		// Print ID and first data byte to serial
-		snprintf(msg, sizeof(msg) - 1,
-				"Extended ID: 0x%lX  Data[0]: 0x%X  Data[1]: 0x%X Data[2]: 0x%X Data[3]: 0x%X Data[4]: 0x%X Data[5]: 0x%X Data[6]: 0x%X Data[7]: 0x%X\r\n",
-				 RxHeader.ExtId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
-		uint8_t datamsg[13];
-		datamsg[0] = RxHeader.ExtId; // bits[7:0]
-		datamsg[1] = RxHeader.ExtId >> 8; // bits[15:8]
-		datamsg[2] = RxHeader.ExtId >> 16; // bits[23:16]
-		datamsg[3] = RxHeader.ExtId >> 24; // bits[31:24]
-		datamsg[4] = RxHeader.DLC;
-		for (int i =0; i < RxHeader.DLC; i++) {
-			datamsg[5+i] = RxData[i];
-		}
-
-		if (HAL_UART_Transmit(&huart2, datamsg, 5 + RxHeader.DLC,
-		HAL_MAX_DELAY) != HAL_OK) {
-
-			Error_Handler();
-		}
-
-//		if (HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg),
-//		HAL_MAX_DELAY) != HAL_OK) {
-//
-//			Error_Handler();
-//		}
-	}
-}
-
-// Handle CAN Rx fifo callback (cannot test in loopback mode)
-// Overrides stm32l4xx_hal_can.c
-void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
-	char msg[80];
-
-	snprintf(msg, sizeof(msg) - 1, "RX FIFO0 Full callback\r\n");
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-}
-
-const char* getSourceID()
-{
-	int value = (RxHeader.ExtId << 3) >> (3 + 19);
-	if (0 <= value && value <= 3)
-	{
-		return "External Master";
-	}
-	if (4 <= value && value <= 5)
-	{
-		return "Chassis Controller";
-	}
-	if (6 <= value && value <= 7)
-	{
-		return "AMS";
-	}
-	if (8 <= value && value <= 11)
-	{
-		return "Shutdown";
-	}
-	if (12 <= value && value <= 13)
-	{
-		return "Shutdown - BPSD";
-	}
-	if (14 <= value && value <= 15)
-	{
-		return "Shutdown - Current";
-	}
-	if (16 <= value && value <= 17)
-	{
-		return "PDM";
-	}
-	if (18 <= value && value <= 19)
-	{
-		return "Steering Wheel";
-	}
-	if (20 <= value && value <= 21)
-	{
-		return "Dashboard";
-	}
-	if (22 <= value && value <= 23)
-	{
-		return "BMS";
-	}
-	if (24 <= value && value <= 25)
-	{
-		return "IMD";
-	}
-	if (26 <= value && value <= 27)
-	{
-		return "Sensors";
-	}
-	if (32 <= value && value <= 28)
-	{
-		return "Sensors";
-	}
-	else
-	{
-		return "Reserved";
-	}
-	return "0";
-}
-
-
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void) {
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
@@ -337,14 +260,9 @@ void Error_Handler(void) {
 	uint32_t error = HAL_CAN_GetError(&hcan);
 
 	snprintf(msg, sizeof(msg) - 1, "error: %ld\r\n", error);
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&huart2, (uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
 
 	/* USER CODE END Error_Handler_Debug */
-}
-
-void USART2_IRQHandler(void)
-{
-  HAL_UART_IRQHandler(&huart2);
 }
 
 #ifdef  USE_FULL_ASSERT
